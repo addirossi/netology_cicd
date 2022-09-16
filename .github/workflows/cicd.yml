@@ -1,9 +1,9 @@
-name: Example CI Django + Postgres Tests
+name: Django Tests
 
-# Controls when the workflow will run
+# Указываем при каких условиях будет срабатывать workflow
 on:
-  push:
-    branches: [master]
+  push: #срабатывает при git push
+    branches: [master] #ветки для отслеживания
 
 
 jobs:
@@ -44,7 +44,7 @@ jobs:
       - name: Линтинг
         run: flake8 main
       - name: Тестирование
-        env:
+        env: #указываем переменные окружения для Django приложения
           DEBUG: "0"
           SECRET_KEY: ${{ env.DJANGO_SECRET_KEY }}
           DB_USER: ${{ env.POSTGRES_USER }}
