@@ -1,0 +1,56 @@
+name: Example CI Django + Postgres Tests
+
+# Controls when the workflow will run
+on:
+  push:
+    branches: [master]
+
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest #выбираем ОС для запуска тестов
+    env: #задаём окружение для использования внутри Github Actions
+      POSTGRES_USER: adilet #укажите имя пользователя
+      POSTGRES_PASSWORD: admin #укажите желаемый пароль
+      POSTGRES_HOST: localhost #значение по умолчанию, менять не нужно
+      POSTGRES_DB: net_ci
+      POSTGRES_PORT: 5432 #значение по умолчанию, менять не нужно
+      DJANGO_SECRET_KEY: test-key-not-good #укажите секретный ключ
+    services:
+      postgres_main: #подключение сервиса postgres, для того, чтобы не падали тесты
+        image: postgres:12 #выбираем образ postgres из dockerhub
+        env:
+          #Указываем параметры для создания БД
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+        ports: #открываем порт 5432 для подключения
+          - 5432:5432
+        options: #проверка работоспособности сервиса postgres
+          --health-cmd pg_isready 
+          --health-interval 10s 
+          --health-timeout 5s 
+          --health-retries 5
+    steps:
+      - name: Проверка репозитория на наличие изменений
+        uses: actions/checkout@v2
+      - name: Установка и настройка python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - name: Установка зависимостей
+        run: |
+          pip install -r requirements.txt
+      - name: Линтинг
+        run: flake8 main
+      - name: Тестирование
+        env:
+          DEBUG: "0"
+          SECRET_KEY: ${{ env.DJANGO_SECRET_KEY }}
+          DB_USER: ${{ env.POSTGRES_USER }}
+          DB_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          DB_HOST: ${{ env.POSTGRES_HOST }}
+          DB_NAME: ${{ env.POSTGRES_DB }}
+          DB_PORT: ${{ env.POSTGRES_PORT }}
+        run: |
+          python manage.py test
